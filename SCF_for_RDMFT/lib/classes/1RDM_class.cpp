@@ -151,7 +151,7 @@ void RDM1::opti(Functional func, int disp, double epsi, double epsi_n, double ep
     if (disp>1){detailed_disp = true;}
     else {detailed_disp = false;}
    
-    while( (E_bis-E)/E>epsi && k<maxiter){
+    while( abs((E_bis-E)/E) >epsi && k<maxiter){
         k++; E_bis = E;
         auto t0 = chrono::high_resolution_clock::now();
         auto res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
