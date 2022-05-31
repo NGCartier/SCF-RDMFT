@@ -23,7 +23,6 @@ using namespace std;
 namespace py = pybind11;
 PYBIND11_MODULE(Compute_1RDM, m){
     m.def("Optimize_1RDM", &Optimize_1RDM, " Given tensors of integrals and a functional returns the 1RDM and prints its energy");
-    m.def("test",&test);
     m.doc() = "C++ extension to compute 1RDMs from PySCF";
 }
 /* 
