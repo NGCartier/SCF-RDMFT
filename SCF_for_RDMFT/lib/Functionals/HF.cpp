@@ -9,36 +9,25 @@ using namespace std;
 #include "../classes/1RDM_class.hpp"
 #include "../classes/Functional_class.hpp"
 #include "HF.hpp"
-/* Defines the auxiliary functions needed to compute the energy of a functional in ../classes/Functional.cpp */
 
-VectorXd HF_fJ(RDM1* gamma){
-    return pow(gamma->n,2);
+MatrixXd HF_WK(RDM1* gamma){
+    int l = gamma->n.size(); VectorXd N = pow(gamma->n,2); MatrixXd W (l,l);
+    MatrixXd v = v_K(gamma,N);
+    for (int i = 0; i<l; i++){
+        for (int j = 0; j<l; j++){
+            W(i,j) = N(i)* v(i,j);
+        }
+    }
+    
+    return 1./2.*W;
 }
 
-VectorXd HF_gJ(RDM1* gamma){
-    return pow(gamma->n,2);
+VectorXd HF_dWK(RDM1* gamma){
+    int l = gamma->n.size(); VectorXd N = pow(gamma->n,2); VectorXd dN = 2.*gamma->n; VectorXd dW (l);
+    MatrixXd v = v_K(gamma,N);
+    for (int i = 0; i<l; i++){
+        dW(i) = dN(i)* v(i,i);
+    }
+    return 1./2.*dW;
 }
 
-VectorXd HF_fK(RDM1* gamma){
-    return pow(gamma->n,2);
-}
-
-VectorXd HF_gK(RDM1* gamma){ 
-    return 1./2.*pow(gamma->n,2);
-}
-
-VectorXd HF_dfJ(RDM1* gamma){
-    return 2.*gamma->n;
-}
-
-VectorXd HF_dgJ(RDM1* gamma){
-    return 2.*gamma->n;
-}
-
-VectorXd HF_dfK(RDM1* gamma){
-    return 2.*gamma->n;
-}
-
-VectorXd HF_dgK(RDM1* gamma){
-    return gamma->n;
-}
