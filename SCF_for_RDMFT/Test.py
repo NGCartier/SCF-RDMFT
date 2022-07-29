@@ -13,16 +13,22 @@ from  pyscf import gto, scf, cc, ci, mp
 import Compute_1RDM
 from Interface import rdm_guess_CISD, compute_1RDM
 
-#Definition of molecules used for the tests (uses PySCF)
-H2 = gto.M(atom = [['H', (-4,0,0)], ['H',(4,0,0)]], basis ='sto3g', spin = 0)
-Li2 = gto.M(atom = [['H', (-1.5,0,0)], ['H',(1.5,0,0)]], basis ='sto3g', spin = 0)
-H2.unit = 'Bohr' ; Li2.unit = 'Bohr'
+#Definition molecules in PySCF
+H2 = gto.M(atom = [['H', (-1.5,0,0)], ['H',(1.5,0,0)]], basis ='sto3g', spin = 0)
+H2_pvdz = gto.M(atom = [['H', (-1.5,0,0)], ['H',(1.5,0,0)]], basis ='cc-pvdz', spin = 0)
+H2_pvtz = gto.M(atom = [['H', (-1.5,0,0)], ['H',(1.5,0,0)]], basis ='cc-pvtz', spin = 0)
+H2.unit = 'Bohr' ; 
+He = gto.M(atom = [['He',(0,0,0)]], basis ='sto3g')
 
-
+Be = gto.M(atom=[['Be',(0,0,0)]], basis = 'sto3g')
 Be_631gs = gto.M(atom=[['Be',(0,0,0)]], basis = '631g*')
 Be_pvdz = gto.M(atom=[['Be',(0,0,0)]], basis = 'cc-pvdz')
+Be_pvtz = gto.M(atom=[['Be',(0,0,0)]], basis = 'cc-pvtz')
+Be_pv5z = gto.M(atom=[['Be',(0,0,0)]], basis = 'cc-pv5z')
 
-He = gto.M(atom = [['He',(0,0,0)]], basis ='sto3g')
+N2 = gto.M(atom = [['N', (-0.55,0,0)], ['N',(0.54,0,0)]], basis ='cc-pvtz', spin = 0)
+HF = gto.M(atom = [['H', (-0.46,0,0)], ['N',(0.45,0,0)]], basis ='cc-pvtz', spin = 0)
+
 alpha = 52.22*np.pi/180 ; a=1.811
 H2O = gto.M(atom = [['O', (0,0,0)],['H',(a*np.cos(alpha),a*np.sin(alpha),0)],
                     ['H',(-a*np.cos(alpha),a*np.sin(alpha),0)]], basis = 'sto3g')
@@ -127,7 +133,6 @@ C4H10O_pvdz = gto.M(atom= [['C',(1.3594	,-0.3333,0.0000)],['C',(0.0000,0.3432,0.
                           ,['H',(2.6493,0.6625,-0.8769)],['H',(3.2042,0.2648,0.0000)]
                           ,['O',(2.3466	,0.6654,0.0000)]], basis = 'cc-pvdz')
 
-
 mol_list = [('Be',Be_pvdz), ('H2O',H2O_pvdz), ('CH4',CH4_pvdz)
            ,('CH3OH',CH3OH_pvdz), ('C2H6',C2H6_pvdz) 
            ,('C2H6O',C2H6O_pvdz), ('C3H8',C3H8_pvdz)]
@@ -136,17 +141,27 @@ mol_large_list = [('Be',Be_pvdz), ('H2O',H2O_pvdz), ('CH4',CH4_pvdz),('CH3OH',CH
            , ('C2H6',C2H6_pvdz) ,('C2H6O',C2H6O_pvdz), ('C3H8',C3H8_pvdz)
            ,('C3H6O',C3H8O_pvdz), ('C4H10',C4H10_pvdz), ('C4H10O',C4H10O_pvdz)]
 
+#to run to evaluate the energy for all the molecules of mol_list
 def auto_test(mol_list):
-    '''
-    to run to evaluate the energy for all the molecules of mol_list
-    '''
     for mol in mol_list:
         print('----------------------------------------------')
         print('Computation of '+mol[0])
         mol[1].verbose = 0
-        n, no = compute_1RDM(mol[1], epsi=1e-6, Maxiter=10000000)
+        n, no = compute_1RDM(mol[1], epsi=1e-6, Maxiter=100000)
         
     print('Computation terminated')
+
+
+
+#test for N2, HF, 
+def conv_test(mol,disp=0):
+    for i in range(9):
+        epsi= 10**(-i)
+        print('Convergence for epsi='+str(epsi))
+        n,no = compute_1RDM(mol,epsi=epsi, Maxiter=10000000,disp=disp)
+        print('-------------------------------------------')
+    
+
 
 
 
