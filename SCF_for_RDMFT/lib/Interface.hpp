@@ -9,4 +9,5 @@ void test(VectorXd occ, MatrixXd orbital_mat, int ne, double Enuc,
                                     MatrixXd overlap,MatrixXd elec1int, MatrixXd elec2int);
 double E(string func, VectorXd occ, MatrixXd orbital_mat, int ne, double Enuc, MatrixXd overlap,MatrixXd elec1int, MatrixXd elec2int);
 VectorXd grad(double (*)(Functional, RDM1*), Functional, RDM1*, double epsi=1e-8); VectorXd grad_func (double (*)(Functional, RDM1*), Functional, RDM1*);
+double test_E(Functional,RDM1*);
 #endif
