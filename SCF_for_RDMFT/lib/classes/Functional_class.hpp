@@ -17,15 +17,15 @@ class Functional{
         VectorXd (*dW_K_)(RDM1*);              //The derivative of W_K_
         VectorXd (*dW_K_subspace_)(RDM1*,int); //W_K_ restricted to one subspace of PNOF omega (for occ only).
     public:
-        Functional(MatrixXd(*)(RDM1*), VectorXd(*)(RDM1*), VectorXd (*dW_K_subspace_)(RDM1*,int) = None, bool is_J_func = false);
+        Functional(MatrixXd(*)(RDM1*), VectorXd(*)(RDM1*), bool is_J_func = false, VectorXd (*dW_K_subspace_)(RDM1*,int) = None);
         bool needs_subspace() const;
-        bool operator==(const Functional&); 
         double E(RDM1*) const; VectorXd grad_E(RDM1*,bool only_n=false,bool only_no=false) const; 
         double E(RDM1*, MatrixXd*, MatrixXd*) const; VectorXd grad_E(RDM1*, MatrixXd*, MatrixXd*, bool only_n=false, bool only_no=false) const;
         VectorXd grad_E_subspace(RDM1*, int) const;
         VectorXd dE_Hxc(RDM1*, bool only_n=false, bool only_no=false) const;
         VectorXd dE_Hxc(RDM1*, MatrixXd*, MatrixXd*, bool only_n=false, bool only_no=false) const;
         VectorXd dE_Hxc_subspace(RDM1*, int) const;
+        
         MatrixXd compute_WJ(RDM1*) const;   MatrixXd compute_WK(RDM1*) const; 
         VectorXd compute_dW_J(RDM1*) const; VectorXd compute_dW_K(RDM1*) const;
         double E_Hxc(MatrixXd*, MatrixXd*) const;
@@ -35,7 +35,7 @@ class Functional{
 double E1(RDM1*); double compute_E1(MatrixXd*, MatrixXd*); VectorXd dE1(RDM1*, bool only_n= false, bool only_no= false);
 MatrixXd v_J(RDM1*,VectorXd*); MatrixXd v_K(RDM1*,VectorXd*); 
 
-MatrixXd dU(MatrixXd*,int,int); MatrixXd dN(VectorXd*, MatrixXd*, int);
+MatrixXd dU(MatrixXd*,int,int); 
 VectorXd pow(const VectorXd*, double);
 
 #endif

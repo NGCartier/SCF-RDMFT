@@ -11,12 +11,12 @@ using namespace std;
 #include <iostream>
 
 MatrixXd W_diag_C1(RDM1* gamma){
-    int l = gamma->n.size(); MatrixXd W = MatrixXd::Zero(l,l);
+    int l = gamma->size(); MatrixXd W = MatrixXd::Zero(l,l);
     for (int i=0;i<l;i++){
         VectorXd n_i = VectorXd::Zero(l); n_i(i) = 1.;
         for (int j=0;j<l;j++){
-            if(gamma->n(i)<1.){
-                W(i,j) = 2.* pow(gamma->n(i),2)*v_K(gamma,&n_i)(i,j);
+            if(gamma->x(i)<-gamma->mu(0)){
+                W(i,j) = 2.* gamma->n(i)*v_K(gamma,&n_i)(i,j);
             }
         }
     }
@@ -24,14 +24,14 @@ MatrixXd W_diag_C1(RDM1* gamma){
 }
 
 MatrixXd BBC1_WK(RDM1* gamma){
-    int l = gamma->n.size(); MatrixXd W (l,l);
+    int l = gamma->size(); MatrixXd W (l,l);
     VectorXd n_virt = VectorXd::Zero(l); VectorXd n_occ = VectorXd::Zero(l); 
     for (int i=0;i<l;i++){
-        if(gamma->n(i)<1.){
-            n_virt(i) = gamma->n(i);
+        if(gamma->x(i)<-gamma->mu(0)){
+            n_virt(i) = sqrt(gamma->n(i));
         }
         else{ 
-            n_occ(i) = gamma->n(i);
+            n_occ(i) = sqrt(gamma->n(i));
         }
     }
     MatrixXd v_virt = v_K(gamma,&n_virt); MatrixXd v_occ = v_K(gamma,&n_occ); 
@@ -46,38 +46,42 @@ MatrixXd BBC1_WK(RDM1* gamma){
 // Derivative respec to the occupations
 
 VectorXd dW_diag_C1(RDM1* gamma){
-    int l = gamma->n.size(); VectorXd dW = VectorXd::Zero(l);
+    int l = gamma->size(); VectorXd dW = VectorXd::Zero(l);
     for (int i=0;i<l;i++){
         VectorXd n_i = VectorXd::Zero(l); n_i(i) = 1.;
-        if(gamma->n(i)<1.){
-            dW(i)= 2.* gamma->n(i) *v_K(gamma,&n_i)(i,i);
+        for (int j=0;j<l;j++){
+            if(gamma->x(i)<-gamma->mu(0)){
+                dW(j) += gamma->dn(i,j) *v_K(gamma,&n_i)(i,i);
+            }
         }
     }
     return dW;
 }
 
 VectorXd BBC1_dWK(RDM1* gamma){
-    int l = gamma->n.size(); VectorXd dW = VectorXd::Zero(l);
+    int l = gamma->size(); VectorXd dW = VectorXd::Zero(l);
     VectorXd  n_virt = VectorXd::Zero(l); VectorXd  n_occ = VectorXd::Zero(l);
-    VectorXd dn_virt = VectorXd::Zero(l); VectorXd dn_occ = VectorXd::Zero(l);
     for (int i=0;i<l;i++){
-        if(gamma->n(i)<1.){
-            n_virt(i) = gamma->n(i);
-            dn_virt(i)=1.;
+        if(gamma->x(i)<-gamma->mu(0)){
+            n_virt(i) = sqrt(gamma->n(i));
         }
         else{
-            n_occ(i) = gamma->n(i);
-            dn_occ(i)=1.;
+            n_occ(i) = sqrt(gamma->n(i));
         }
     }
     MatrixXd v_virt = v_K(gamma,&n_virt); MatrixXd v_occ = v_K(gamma,&n_occ);  
     for (int i=0; i<l; i++){   
-        if (gamma->n(i)<1.){
-            dW(i) += - dn_virt(i) * v_virt(i,i) + dn_virt(i) * v_occ(i,i);
-        }
-        else{
-            dW(i) += dn_occ(i) * v_virt(i,i) + dn_occ(i) * v_occ(i,i);
-        }   
+        for (int j=0;j<l;j++){
+            if (gamma->x(i)<-gamma->mu(0)){
+                double dn_virt = gamma->dsqrt_n(i,j); 
+                dW(j) += - dn_virt * v_virt(i,i) + dn_virt * v_occ(i,i);
+            }
+            else{
+                double dn_occ = gamma->dsqrt_n(i,j); 
+                dW(j) += dn_occ * v_virt(i,i) + dn_occ * v_occ(i,i);
+            }
+        } 
+                     
     }
     return dW + dW_diag_C1(gamma);
 }

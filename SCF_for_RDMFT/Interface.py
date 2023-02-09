@@ -34,31 +34,15 @@ def compute_1RDM(mol, guess="CISD", func="Muller", disp=0, epsi = 1e-6, Maxiter=
         Matrix to go from natural to atomic orbitals   
     """
     if guess=="HF":
-        n, no, ne, Enuc, overlap, elec1int, elec2int  = rdm_guess(mol)
+        n, no, ne, Enuc, overlap, elec1int, elec2int  = rdm_guess (mol)
     elif guess=="CISD":
-        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_CISD(mol)
-    elif guess=="uniform":
-        #to test problematic case
-        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_uniform(mol)
+        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_CISD (mol)
     else :
         n, no, ne, Enuc, overlap, elec1int, elec2int = No_init(mol)
-    l = len(n)
     return Compute_1RDM.Optimize_1RDM(func, n, no, ne, Enuc, overlap, elec1int, elec2int,
                                 disp, epsi, Maxiter)
         
-def E(mol, guess="CISD", func="Muller", disp=0, epsi = 1e-6, Maxiter=100 ):
-   
-    if guess=="HF":
-        n, no, ne, Enuc, overlap, elec1int, elec2int  = rdm_guess(mol)
-    elif guess=="CISD":
-        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_CISD(mol)
-    elif guess=="uniform":
-        #to test problematic case
-        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_uniform(mol)
-    else :
-        n, no, ne, Enuc, overlap, elec1int, elec2int = No_init(mol)
-    l = len(n)
-    return Compute_1RDM.E(func, n, no, ne, Enuc, overlap, elec1int, elec2int)
+
 
 
 def rdm_guess (mol,  beta=1.6):
@@ -99,14 +83,14 @@ def rdm_guess (mol,  beta=1.6):
     for i in range (mol.nao):
         n[i] = FD_occ(E,i, mu)
     else :
-        id_min = 0 ; id_max = mol.nao-1
+        id_min = 0 ; 
         for i in range (mol.nao):
             
             n[i] = FD_occ(E, id_min, mu)
             id_min += 1
             
     l = len(n)
-    return (np.sqrt(n), No,
+    return (n, No,
             mol.nelectron, mol.energy_nuc(), mol.intor('int1e_ovlp'), 
             mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
             mol.intor('int2e').reshape(l**2,l**2) )
@@ -130,36 +114,26 @@ def rdm_guess_CISD(mol):
     n,No  = np.linalg.eigh(gamma)
     No = iS@No
     l = len(n)
-    return (np.sqrt(n), No,
+    return (n, No,
             mol.nelectron, mol.energy_nuc(), mol.intor('int1e_ovlp'), 
             mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
             mol.intor('int2e').reshape(l**2,l**2) )
 
-def No_init(mol,epsi=1e-6):
+def No_init(mol):
     l = mol.nao
     S = mol.intor('int1e_ovlp')
     No = np.real(sc.linalg.sqrtm( np.linalg.inv( S ) ) )
     ne = mol.nelectron
     if ne > l:
-        n = np.full(l,1.+epsi)
-        n[range(2*l-ne,l)] = np.sqrt(2)
+        n = np.full(l,1.)
+        n[range(2*l-ne,l)] = 2.
     else:
         n = np.zeros(l)
-        n[range(l-ne,l)] = 1+epsi
+        n[range(l-ne,l)] = 1
     
     return (n, No,
             mol.nelectron, mol.energy_nuc(), S, 
             mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
             mol.intor('int2e').reshape(l**2,l**2) )
-
-def rdm_guess_uniform(mol,epsi=1e-5):
-    l = mol.nao
-    S = mol.intor('int1e_ovlp')
-    No = np.real(sc.linalg.sqrtm( np.linalg.inv( S ) ) )
-    ne = mol.nelectron
-    n = np.array([ne/l+np.random.uniform(-epsi,epsi) for i in range(l)])
-    return (n, No,
-            mol.nelectron, mol.energy_nuc(), S, 
-            mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
-            mol.intor('int2e').reshape(l**2,l**2) )
+    
     
