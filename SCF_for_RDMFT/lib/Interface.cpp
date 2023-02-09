@@ -29,13 +29,12 @@ using namespace Eigen;
 
 #include "Functionals/HF.hpp"
 #include "Functionals/Muller.hpp"
-#include "Functionals/Power.hpp"
 #include "Functionals/BBC1.hpp"
 #include "Functionals/BBC2.hpp"
 #include "Functionals/PNOF7.hpp"
 
 //Dictionary of functionals 
-map<string, Functional> Funcs = {{"HF",HF_func},{"Muller",Muller_func},{"Power",Power_func},{"BBC1",BBC1_func},{"BBC2",BBC2_func},{"PNOF7",PNOF7_func},{"PNOF7_old",PNOF7_old_func}};
+map<string, Functional> Funcs = {{"HF",HF_func},{"Muller",Muller_func},{"BBC1",BBC1_func},{"BBC2",BBC2_func},{"PNOF7",PNOF7_func}};
 
 
 // Wrapper to python code
@@ -52,7 +51,7 @@ PYBIND11_MODULE(Compute_1RDM, m){
     m.def("test",&test);
     m.doc() = "C++ extension to compute 1RDMs from PySCF";
 }
-      
+       
 //Used to test the library from Python
 void test(VectorXd occ, MatrixXd orbital_mat, int ne, double Enuc,
                                     MatrixXd overlap,MatrixXd elec1int, MatrixXd elec2int){
@@ -132,14 +131,10 @@ double E (string func, VectorXd occ, MatrixXd orbital_mat, int ne, double Enuc,
     MatrixXd elec2int_x(ll, ll); elec2int_x = MatrixCast(T.shuffle(index), ll, ll);
     RDM1 gamma = RDM1(occ, orbital_mat, ne, Enuc, overlap, elec1int, elec2int, elec2int_x); double E;
     auto functional = Funcs.find(func);
-    
     if (functional == Funcs.end()) {
         E = HF_func.E(&gamma);  
     }
     else{
-        if(functional->second.needs_subspace()){
-            gamma.subspace();
-        }
         E = functional->second.E(&gamma);  
     }
     return E; 
@@ -171,10 +166,15 @@ int main(){
 
     cout.precision(18);
 
-    cout<<"E_i="<<Muller_func.E(&gamma);
-    gamma.opti(&Muller_func);
-    cout<<" E_f="<<Muller_func.E(&gamma)<<endl;
+    
+    cout<<"E_Muller="<<Muller_func.E(&gamma) <<endl;
+    gamma.subspace();
+    cout<<"E_PNOF7 ="<<PNOF7_func.E(&gamma)<<endl;
+
+    cout<<"grad E:"<<PNOF7_func.grad_E(&gamma,true,false).transpose()<<endl<<endl;
+    cout<<"test dE:"<<(dE1(&gamma,true,false)+PNOF7_dEK(&gamma)).transpose()<<endl<<endl;
+    cout<<"num grad:"<<grad_func(PNOF7_func,&gamma).transpose()<<endl<<endl;
         
     return 0;
-}*/
-
+}
+*/
