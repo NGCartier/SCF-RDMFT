@@ -230,7 +230,7 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         tuple<double,int> res;
         try{
             res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
-            if(E>E_bis){break;}
+            if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ NO iteration interrupted due to Nlopt failure."<<endl;   
@@ -241,7 +241,7 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         auto t1 = chrono::high_resolution_clock::now();
         try{
             res = opti_n(this, func, epsi_n, min(1e-9, epsi_n*1e-2), detailed_disp, maxiter);
-            if(E>E_bis){break;}
+            if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ Occ iteration interrupted due to Nlopt failure."<<endl;   
@@ -254,17 +254,17 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
             cout<<"NO opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
-        if (nit_n <=15 && epsi_no>epsi_n){epsi_no /=6.9;}
+        if (nit_n <=15 && epsi_no>epsi_n){epsi_no =max(epsi_no/6.9, epsi_n);}
         
     }
     if (k==maxiter){
         cout<<"Computation did not converge"<<endl;
     }
     auto t_fin = chrono::high_resolution_clock::now();
-    //if (disp>0){ 
+    if (disp>0){ 
         cout<<endl;
         cout<<"Computational time "; print_t(t_fin,t_init); cout<<" total # of iter "<<nit<<endl;
-    //}
+    }
 }
 
 
@@ -400,15 +400,12 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
 
 MatrixXd exp_unit(VectorXd* l_theta){
     int l = ((sqrt(8*l_theta->size())+1)+1)/2; int index = 0;
-    MatrixXd res (l,l); 
+    MatrixXd res = MatrixXd::Zero(l,l); 
     for (int i=0;i<l;i++){
-        for (int j=0;j<=i;j++){
-            if (i==j){res(i,i) = 0;}
-            else{
-                res(i,j) = l_theta->coeff(index);
-                res(j,i) = -l_theta->coeff(index);
-                index++;
-            }
+        for (int j=0;j<i;j++){
+            res(i,j) = l_theta->coeff(index);
+            res(j,i) = -l_theta->coeff(index);
+            index++;
         }
     }
     return res.exp();
@@ -443,16 +440,12 @@ tuple<double,int> opti_no(RDM1* gamma, Functional* func, double epsilon, bool di
     int l = gamma->n.size(); int ll = l*(l-1)/2;
     vector<double> x (ll,0); double fx; 
     nlopt::opt opti = nlopt::opt(nlopt::LD_LBFGS, ll);
-    if (*func == PNOF7_func){ // Convergence issue for PNOF7 with BFGS (quick fix).
-        opti = nlopt::opt(nlopt::LD_SLSQP, ll);
-    }
     
     data_struct f_data;
     f_data.gamma = gamma; f_data.func = func; 
     
     opti.set_min_objective(f_no, &f_data);
     opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
-    opti.set_vector_storage(20);
     nlopt::result res = opti.optimize(x, fx);
     if (disp){
         cout<<opti.get_algorithm_name()<<endl;
