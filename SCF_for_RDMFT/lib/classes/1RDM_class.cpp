@@ -4,6 +4,7 @@
 #include <eigen3/unsupported/Eigen/CXX11/Tensor>
 #include <eigen3/unsupported/Eigen/MatrixFunctions>
 #include <float.h>
+#include <fstream>
 #include <iostream>
 #include <iomanip>      
 #include <chrono>
@@ -212,24 +213,25 @@ void print_t(chrono::high_resolution_clock::time_point t1, chrono::high_resoluti
 the occupations and NOs are optimised in-place
 */
 void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double epsi_no, int maxiter){
-
     cout<<setprecision(-log(epsi)+1);
     auto t_init = chrono::high_resolution_clock::now();
     int k = 0; int l = n.size(); int nit= 0; int ll = l*(l-1)/2;
     double E = func->E(this); double E_bis = DBL_MAX;
     
     bool detailed_disp;
-    if (disp>1){detailed_disp = true;}
+    if (disp>2){detailed_disp = true;}
     else {detailed_disp = false;}
-    double len_up = 1+1./((double)l+epsi);
+    double len_up = 1+1./((double)l);
+    
+    while( ( abs((E_bis-E)/E)>epsi  || epsi_no!=epsi_n ) && k<maxiter){ 
+        
 
-    while( (abs((E_bis-E)/E)>epsi  ) && k<maxiter){ 
         k++; E_bis = E; 
         auto t0 = chrono::high_resolution_clock::now();
         tuple<double,int> res;
         try{
             res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
-            if(E>E_bis){break;}
+            if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ NO iteration interrupted due to Nlopt failure."<<endl;   
@@ -240,7 +242,7 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         auto t1 = chrono::high_resolution_clock::now();
         try{
             res = opti_n(this, func, epsi_n, min(1e-9, epsi_n*1e-2), detailed_disp, maxiter);
-            if(E>E_bis){break;}
+            if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ Occ iteration interrupted due to Nlopt failure."<<endl;   
@@ -248,9 +250,9 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         int nit_n = get<1>(res); E = get<0>(res);
         auto t2 = chrono::high_resolution_clock::now();
         nit += nit_n + nit_no;
-        if (disp>0){
+        if (disp>1){
             cout<<"Iteration "<<k <<" E="<<E<<" |grad_E|="<< (func->grad_E(this,false,false)).norm()<<endl;
-            cout<<"NO opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
+            cout<<"NO  opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
         if (epsi_n >sqrt(epsi)){epsi_n /=EPSI_UPDATE * len_up;}
@@ -261,10 +263,10 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         cout<<"Computation did not converge"<<endl;
     }
     auto t_fin = chrono::high_resolution_clock::now();
-    //if (disp>0){ 
+    if (disp>0){ 
         cout<<endl;
         cout<<"Computational time "; print_t(t_fin,t_init); cout<<" total # of iter "<<nit<<endl;
-    //}
+    }
 }
 
 
@@ -400,15 +402,12 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
 
 MatrixXd exp_unit(VectorXd* l_theta){
     int l = ((sqrt(8*l_theta->size())+1)+1)/2; int index = 0;
-    MatrixXd res (l,l); 
+    MatrixXd res = MatrixXd::Zero(l,l); 
     for (int i=0;i<l;i++){
-        for (int j=0;j<=i;j++){
-            if (i==j){res(i,i) = 0;}
-            else{
-                res(i,j) = l_theta->coeff(index);
-                res(j,i) = -l_theta->coeff(index);
-                index++;
-            }
+        for (int j=0;j<i;j++){
+            res(i,j) = l_theta->coeff(index);
+            res(j,i) = -l_theta->coeff(index);
+            index++;
         }
     }
     return res.exp();
@@ -426,6 +425,7 @@ double f_no(const vector<double>& x, vector<double>& grad, void* f_data){
         double E = data->func->E(data->gamma, &W_J, &W_K) ; 
         grad.resize(ll) ;
         Map<VectorXd>(grad.data(),grad.size()) = data->func->grad_E(data->gamma, &W_J, &W_K, false,true);
+
         data->gamma->set_no (NO);
         return E;
     };
@@ -440,23 +440,17 @@ the occupations are NOs in-place
 \param results  corresponding energy, number of iterations
 */
 tuple<double,int> opti_no(RDM1* gamma, Functional* func, double epsilon, bool disp, int maxiter){
-    int l = gamma->n.size(); int ll = l*(l-1)/2;
+    int l = gamma->n.size(); int ll = l*(l-1)/2; 
     vector<double> x (ll,0); double fx; 
     nlopt::opt opti = nlopt::opt(nlopt::LD_LBFGS, ll);
-    if (*func == PNOF7_func){ // Convergence issue for PNOF7 with BFGS (quick fix).
-        opti = nlopt::opt(nlopt::LD_SLSQP, ll);
-    }
     
     data_struct f_data;
     f_data.gamma = gamma; f_data.func = func; 
     
     opti.set_min_objective(f_no, &f_data);
     opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
-    opti.set_vector_storage(20);
     nlopt::result res = opti.optimize(x, fx);
-    if (disp){
-        cout<<opti.get_algorithm_name()<<endl;
-    }
+    
     VectorXd l_theta = VectorXd::Map (x.data(), ll);
     gamma->set_no(gamma->no*exp_unit(&l_theta));
     return make_tuple(opti.last_optimum_value(),opti.get_numevals());

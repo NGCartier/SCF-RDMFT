@@ -1,10 +1,12 @@
 #ifndef _1RDM_CLASS_hpp_
 #define _1RDM_CLASS_hpp_
 #include "Functional_class.hpp"
-#include<tuple>
+#include <tuple>
 #include <vector>
 using namespace std;
 class Functional;
+
+const double EPSI_UPDATE = 1.5;
 
 // Defines the 1RDM class (see 1RDM_class.cpp for more detail)
 class RDM1{
