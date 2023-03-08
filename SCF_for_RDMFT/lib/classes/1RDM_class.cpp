@@ -216,7 +216,7 @@ double RDM1::dn(int i, int j){
 MatrixXd RDM1::dn(int i){
     int l = size(); VectorXd res(l);
     for (int j=0;j<l;j++){
-        res(j) = dn(i,j);
+        res(j) = dn(j,i);
     }
     return res.asDiagonal();
 }
@@ -240,7 +240,7 @@ double RDM1::dsqrt_n(int i,int j){
 MatrixXd RDM1::dsqrt_n(int i){
     int l = size(); VectorXd res(l);
     for (int j=0;j<l;j++){
-        res(j) = dsqrt_n(i,j);
+        res(j) = dsqrt_n(j,i);
     }
     return res.asDiagonal();
 }
