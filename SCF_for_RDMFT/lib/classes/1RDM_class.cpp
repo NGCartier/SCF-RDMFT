@@ -213,19 +213,18 @@ void print_t(chrono::high_resolution_clock::time_point t1, chrono::high_resoluti
 the occupations and NOs are optimised in-place
 */
 void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double epsi_no, int maxiter){
-    cout<<setprecision(-log(epsi)+1);
+    cout<<setprecision(-log10(epsi)+1);
     auto t_init = chrono::high_resolution_clock::now();
-    int k = 0; int l = n.size(); int nit= 0; int ll = l*(l-1)/2;
-    double E = func->E(this); double E_bis = DBL_MAX;
+    int k = 0; int l = n.size(); int nit= 0; int ll = l*(l-1)/2; bool NO_precise = false;
+    double E = func->E(this); double E_bis = DBL_MAX; double grad = DBL_MAX;
     
     bool detailed_disp;
-    if (disp>1){detailed_disp = true;}
+    if (disp>2){detailed_disp = true;}
     else {detailed_disp = false;}
-    double epsi_no_bis = epsi_no;
-    while( (abs((E_bis-E)/E)>epsi  || epsi_no_bis!=epsi_no  ) && k<maxiter){ 
-        
 
-        k++; E_bis = E; epsi_no_bis = epsi_no;
+    while( ( (E-E_bis)/E>epsi  || !NO_precise ) && k<maxiter){//weak termination criterium
+
+        k++; E_bis = E; 
         auto t0 = chrono::high_resolution_clock::now();
         tuple<double,int> res;
         try{
@@ -248,13 +247,19 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         }
         int nit_n = get<1>(res); E = get<0>(res);
         auto t2 = chrono::high_resolution_clock::now();
-        nit += nit_n + nit_no;
-        if (disp>0){
-            cout<<"Iteration "<<k <<" E="<<E<<" |grad_E|="<< (func->grad_E(this,false,false)).norm()<<endl;
-            cout<<"NO opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
+        nit += nit_n + nit_no; grad = (func->grad_E(this,false,false)).norm();
+        if (disp>1){
+            cout<<"Iteration "<<k <<" E="<<E<<" |grad_E|="<< grad <<endl;
+            cout<<"NO  opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
-        if (nit_n <=15 && epsi_no>epsi_n){epsi_no =max(epsi_no/6.9, epsi_n);}
+        if (nit_n <=15 && !NO_precise){
+            epsi_no /= 6.9;
+            if(epsi_no<epsi_n){
+                epsi_no = epsi_n;
+                NO_precise = true;
+            }
+        }
         
     }
     if (k==maxiter){
