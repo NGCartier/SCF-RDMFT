@@ -253,14 +253,8 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
             cout<<"NO  opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
-        if (nit_n <=15 && !NO_precise){
-            epsi_no /= 6.9;
-            if(epsi_no<epsi_n){
-                epsi_no = epsi_n;
-                NO_precise = true;
-            }
-        }
-        
+        if(epsi_no=epsi_n){NO_precise =true;}
+        if (nit_n <=15 && !NO_precise){epsi_no = max(epsi_no/6.9,epsi_n); }
     }
     if (k==maxiter){
         cout<<"Computation did not converge"<<endl;
@@ -270,25 +264,6 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         cout<<endl;
         cout<<"Computational time "; print_t(t_fin,t_init); cout<<" total # of iter "<<nit<<endl;
     }
-}
-
-
-double norm2(VectorXd* x){
-    int l = x->size();
-    double res = 0;
-    for (int i =0; i<l;i++){
-        res += pow(x->coeff(i),2);
-    }
-    return sqrt(res);
-}
-
-double norm1(VectorXd* x){
-    int l = x->size();
-    double res = 0;
-    for (int i =0;i<l;i++){
-        res += abs(x->coeff(i));
-    }
-    return res;
 }
 
 //Structure used to pass the functional and 1RDM to NLopt methods
