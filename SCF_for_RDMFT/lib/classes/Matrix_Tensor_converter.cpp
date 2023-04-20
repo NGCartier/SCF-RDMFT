@@ -7,6 +7,7 @@ using  MatrixType = Eigen::Matrix<T,Eigen::Dynamic, Eigen::Dynamic>;
 template<typename T>
 using  VectorType = Eigen::Matrix<T,Eigen::Dynamic, 1>;
 
+//From https://stackoverflow.com/questions/48795789/eigen-unsupported-tensor-to-eigen-matrix from DavidAce
 
 /*
  *
