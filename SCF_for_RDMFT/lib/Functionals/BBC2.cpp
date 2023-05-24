@@ -43,7 +43,7 @@ MatrixXd BBC2_WK(RDM1* gamma){
     MatrixXd v_virt = v_K(gamma,&n_virt); MatrixXd v_occ = v_K(gamma,&n_occ); MatrixXd v_occ2 = v_K(gamma,&n_occ2); 
     for (int i = 0; i<l; i++){
         for (int j = 0; j<l; j++){  
-            W(i,j) = - n_virt(i)* v_virt(i,j) + 1./sqrt(2)*n_virt(i)* v_occ(i,j) + 1./sqrt(2)*n_occ(i)* v_virt(i,j) + 1./2.*n_occ2(i)* v_occ2(i,j); 
+            W(i,j) = - n_virt(i)* v_virt(i,j) + n_virt(i)* v_occ(i,j) + n_occ(i)* v_virt(i,j) + 1./2.*n_occ2(i)* v_occ2(i,j); 
         }    
     }
     return W + W_diag(gamma);
@@ -84,11 +84,11 @@ VectorXd BBC2_dWK(RDM1* gamma){
         for (int j=0;j<l;j++){
             if (gamma->x(i)<-gamma->mu(0)){
                 double dn_virt = gamma->dsqrt_n(i,j); 
-                dW(j) += - dn_virt * v_virt(i,i) + 1./sqrt(2)*dn_virt * v_occ(i,i);
+                dW(j) += - dn_virt * v_virt(i,i) + dn_virt * v_occ(i,i);
             }
             else{
                 double dn_occ = gamma->dsqrt_n(i,j); double dn_occ2 = gamma->dn(i,j);
-                dW(j) += 1./sqrt(2)*dn_occ * v_virt(i,i) + 1./2.*dn_occ2 * v_occ2(i,i);
+                dW(j) += dn_occ * v_virt(i,i) + 1./2.*dn_occ2 * v_occ2(i,i);
             }
         } 
                      
