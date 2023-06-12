@@ -253,8 +253,9 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
             cout<<"NO  opti time: "; print_t(t1,t0); cout<<" and # of iter "<< nit_no<<endl;
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
-        if(epsi_no=epsi_n){NO_precise =true;}
+        if(epsi_no==epsi_n){NO_precise =true;}
         if (nit_n <=15 && !NO_precise){epsi_no = max(epsi_no/6.9,epsi_n); }
+        
     }
     if (k==maxiter){
         cout<<"Computation did not converge"<<endl;
@@ -266,9 +267,28 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
     }
 }
 
+
+double norm2(VectorXd* x){
+    int l = x->size();
+    double res = 0;
+    for (int i =0; i<l;i++){
+        res += pow(x->coeff(i),2);
+    }
+    return sqrt(res);
+}
+
+double norm1(VectorXd* x){
+    int l = x->size();
+    double res = 0;
+    for (int i =0;i<l;i++){
+        res += abs(x->coeff(i));
+    }
+    return res;
+}
+
 //Structure used to pass the functional and 1RDM to NLopt methods
 typedef struct{
-    RDM1* gamma; Functional* func; int g;
+    RDM1* gamma; Functional* func; int g; VectorXd l_theta;
     }data_struct;
 
 //Default objective function for the occupations optimistion called by the NLopt minimizer
@@ -396,14 +416,15 @@ double f_no(const vector<double>& x, vector<double>& grad, void* f_data){
         int ll = x.size(); int l = (sqrt(8*ll+1)+1)/2;
         VectorXd l_theta = VectorXd::Map (x.data(), ll); data_struct *data = (data_struct*) f_data;
         MatrixXd NO (l,l); NO = data->gamma->no;
-        data->gamma->set_no(data->gamma->no*exp_unit(&l_theta));
-        
+        VectorXd step = l_theta - data->l_theta;
+        data->gamma->set_no(data->gamma->no*exp_unit(&step));
+        data->l_theta = l_theta; 
         MatrixXd W_J (l,l); W_J = data->func->compute_WJ(data->gamma);
         MatrixXd W_K (l,l); W_K = data->func->compute_WK(data->gamma);
         double E = data->func->E(data->gamma, &W_J, &W_K) ; 
         grad.resize(ll) ;
         Map<VectorXd>(grad.data(),grad.size()) = data->func->grad_E(data->gamma, &W_J, &W_K, false,true);
-        data->gamma->set_no (NO);
+
         return E;
     };
 
@@ -417,21 +438,19 @@ the occupations are NOs in-place
 \param results  corresponding energy, number of iterations
 */
 tuple<double,int> opti_no(RDM1* gamma, Functional* func, double epsilon, bool disp, int maxiter){
-    int l = gamma->n.size(); int ll = l*(l-1)/2;
+    int l = gamma->n.size(); int ll = l*(l-1)/2; 
     vector<double> x (ll,0); double fx; 
     nlopt::opt opti = nlopt::opt(nlopt::LD_LBFGS, ll);
-    
+    opti.set_vector_storage(4);
+
     data_struct f_data;
-    f_data.gamma = gamma; f_data.func = func; 
+    f_data.gamma = gamma; f_data.func = func; f_data.l_theta = VectorXd::Zero(ll);
     
     opti.set_min_objective(f_no, &f_data);
     opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
     nlopt::result res = opti.optimize(x, fx);
-    if (disp){
-        cout<<opti.get_algorithm_name()<<endl;
-    }
+    
     VectorXd l_theta = VectorXd::Map (x.data(), ll);
-    gamma->set_no(gamma->no*exp_unit(&l_theta));
     return make_tuple(opti.last_optimum_value(),opti.get_numevals());
 }
 
