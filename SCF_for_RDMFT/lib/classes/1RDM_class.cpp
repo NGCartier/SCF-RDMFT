@@ -382,7 +382,7 @@ the occupations and NOs are optimised in-place
 */
 void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double epsi_no, int maxiter){
 
-    cout<<setprecision(-log(epsi)+1);
+    cout<<setprecision(-log10(epsi)+1);
     auto t_init = chrono::high_resolution_clock::now();
     int k = 0; int l = size(); int nit= 0; int ll = l*(l-1)/2;
     double E = func->E(this); double E_bis = DBL_MAX; double grad = DBL_MAX;
@@ -452,7 +452,7 @@ double norm1(VectorXd* x){
 
 //Structure used to pass the functional and 1RDM to NLopt methods
 typedef struct{
-    RDM1* gamma; Functional* func; int g; MatrixXd NO; int niter;
+    RDM1* gamma; Functional* func; int g; MatrixXd NO; int niter; VectorXd l_theta;
     }data_struct;
 
 //Default objective function for the occupations optimistion called by the NLopt minimizer
@@ -562,8 +562,10 @@ MatrixXd exp_unit(VectorXd* l_theta){
 double f_no(const vector<double>& x, vector<double>& grad, void* f_data){
     int ll = x.size(); int l = (sqrt(8*ll+1)+1)/2;
     VectorXd l_theta = VectorXd::Map (x.data(), ll); data_struct *data = (data_struct*) f_data;
-    MatrixXd NO (l,l); NO = data->gamma->no;
-    data->gamma->set_no(data->NO*exp_unit(&l_theta));
+    MatrixXd NO = data->gamma->no;
+    VectorXd step = l_theta - data->l_theta;
+    data->gamma->set_no(NO*exp_unit(&step));
+    data->l_theta = l_theta;
     
     MatrixXd W_J (l,l); W_J = data->func->compute_WJ(data->gamma);
     MatrixXd W_K (l,l); W_K = data->func->compute_WK(data->gamma);
@@ -589,17 +591,15 @@ tuple<double,int> opti_no(RDM1* gamma, Functional* func, double epsilon, bool di
     nlopt::opt opti = nlopt::opt(nlopt::LD_LBFGS, ll);
     
     data_struct f_data;
-    f_data.gamma = gamma; f_data.func = func; f_data.NO = gamma->no;
+    f_data.gamma = gamma; f_data.func = func; f_data.l_theta = VectorXd::Zero(ll);
     
     opti.set_min_objective(f_no, &f_data);
     opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
-    opti.set_vector_storage(20);
+    opti.set_vector_storage(4);
     nlopt::result res = opti.optimize(x, fx);
     if (disp){
         cout<<opti.get_algorithm_name()<<endl;
     }
-    VectorXd l_theta = VectorXd::Map (x.data(), ll);
-    gamma->set_no(f_data.NO*exp_unit(&l_theta));
     return make_tuple(opti.last_optimum_value(),opti.get_numevals());
 }
 
