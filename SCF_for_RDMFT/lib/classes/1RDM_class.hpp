@@ -44,12 +44,11 @@ class RDM1{
         RDM1(const RDM1*);
         ~RDM1();
         MatrixXd mat() const;
-        void opti(Functional*,int disp=0,double epsi=1e-6, double epsi_n=1e-3, double epsi_no =1e-3, int maxiter=100);
+        void opti(Functional*,int disp=0,double epsi=1e-6,int maxiter=100);
 };
 //Auxiliary functions used to minimise the energy of the 1RDM
 double norm2(VectorXd* x); double norm1(VectorXd* x);
-tuple<double,int> opti_n( RDM1*,Functional*,double epsilon=1e-8,double eta =1e-10, bool disp=false, int maxiter=100);
-tuple<double,int> opti_no(RDM1*,Functional*,double epsilon=1e-8,bool disp=false, int maxiter=100);
+tuple<double,int> opti_aux(RDM1*,Functional*,double epsilon=1e-8,bool disp=false, int maxiter=100);
 MatrixXd exp_unit(VectorXd*);
 void print_t(chrono::high_resolution_clock::time_point, chrono::high_resolution_clock::time_point, int iter=1);
 

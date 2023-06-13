@@ -37,6 +37,8 @@ def compute_1RDM(mol, guess="CISD", func="Muller", disp=0, epsi = 1e-6, Maxiter=
         n, no, ne, Enuc, overlap, elec1int, elec2int  = rdm_guess (mol)
     elif guess=="CISD":
         n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_CISD (mol)
+    elif guess=="CCSD":
+        n, no, ne, Enuc, overlap, elec1int, elec2int =  rdm_guess_CCSD (mol)
     else :
         n, no, ne, Enuc, overlap, elec1int, elec2int = No_init(mol)
     return Compute_1RDM.Optimize_1RDM(func, n, no, ne, Enuc, overlap, elec1int, elec2int,
@@ -45,7 +47,7 @@ def compute_1RDM(mol, guess="CISD", func="Muller", disp=0, epsi = 1e-6, Maxiter=
 
 
 
-def rdm_guess (mol,  beta=1.6):
+def rdm_guess (mol,  beta=.4):
     '''Returns the 1RDM of the mol molecule using HF orbitals and Fermi-Dirac distribtution'''
     def FD_occ (E,i, mu):  return 2/(1+np.exp(-beta*(E[i]-mu ) ) )
 
@@ -83,7 +85,7 @@ def rdm_guess (mol,  beta=1.6):
     for i in range (mol.nao):
         n[i] = FD_occ(E,i, mu)
     else :
-        id_min = 0 ; 
+        id_min = 0 ; id_max = mol.nao-1
         for i in range (mol.nao):
             
             n[i] = FD_occ(E, id_min, mu)
@@ -118,6 +120,31 @@ def rdm_guess_CISD(mol):
             mol.nelectron, mol.energy_nuc(), mol.intor('int1e_ovlp'), 
             mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
             mol.intor('int2e').reshape(l**2,l**2) )
+
+
+def rdm_guess_CCSD(mol):
+    '''Return 1RDM for molecule mol using CCSD'''
+    mf = scf.HF(mol)
+    #mf = scf.addons.frac_occ(mf)
+    mf.kernel()
+    mf.mo_coeff
+    cc_mol = cc.CCSD(mf)
+    _,_, ccvec = cc_mol.kernel()
+    rdm1_MO = cc_mol.make_rdm1()
+    rdm1 = mf.mo_coeff@rdm1_MO@mf.mo_coeff.T
+    
+    sqS = np.real( sc.linalg.sqrtm( mol.intor('int1e_ovlp') ) )
+    iS = np.linalg.inv(sqS)
+      
+    gamma = sqS@rdm1@sqS 
+    n,No  = np.linalg.eigh(gamma)
+    No = iS@No
+    l = len(n)
+    return (n, No,
+            mol.nelectron, mol.energy_nuc(), mol.intor('int1e_ovlp'), 
+            mol.intor('int1e_nuc').copy()+mol.intor('int1e_kin').copy(),
+            mol.intor('int2e').reshape(l**2,l**2) )
+
 
 def No_init(mol):
     l = mol.nao

@@ -52,9 +52,9 @@ MatrixXd hess_func(Functional* func, RDM1* gamma, bool do_n, bool do_no, double 
     if (do_no){
         for(int i=l;i<ll;i++){
             RDM1 gamma_p (gamma); RDM1 gamma_m (gamma);
-            VectorXd dtheta_p = VectorXd::Zero(ll-l); dtheta_p(i-l) =  epsi;
-            VectorXd dtheta_m = VectorXd::Zero(ll-l); dtheta_m(i-l) = -epsi;
-            gamma_p.set_no( gamma->no*exp_unit(&dtheta_p)); gamma_m.set_no( gamma->no*exp_unit(&dtheta_m));
+            VectorXd dtheta = VectorXd::Zero(ll-l); dtheta(i-l) = epsi;
+            VectorXd dtheta_m = VectorXd::Zero(ll-l); dtheta_m(i-l) = epsi;
+            gamma_p.set_no( gamma->no*exp_unit(&dtheta)); gamma_m.set_no( gamma->no*exp_unit(&dtheta_m));
             VectorXd grad_p = func->grad_E(&gamma_p,false,true); VectorXd grad_m = func->grad_E(&gamma_m,false,true);
             res.block(i,l,1,ll-l) = (grad_p-grad_m).transpose()/(2.*epsi);
         }

@@ -11,7 +11,7 @@ from  pyscf import gto, scf, cc, ci, mp
 
 
 import Compute_1RDM
-from Interface import rdm_guess_CISD, compute_1RDM
+from Interface import rdm_guess_CISD, rdm_guess, compute_1RDM
 
 #Definition molecules in PySCF
 H2 = gto.M(atom = [['H', (-1.5,0,0)], ['H',(1.5,0,0)]], basis ='sto3g', spin = 0)
@@ -149,7 +149,7 @@ def auto_test(mol_list):
         print('----------------------------------------------')
         print('Computation of '+mol[0])
         mol[1].verbose = 0
-        n, no = compute_1RDM(mol[1], epsi=1e-6, Maxiter=100000)
+        n, no = compute_1RDM(mol[1], epsi=1e-6, Maxiter=100000, disp =1)
         
     print('Computation terminated')
 

@@ -30,12 +30,11 @@ using namespace Eigen;
 
 #include "Functionals/HF.hpp"
 #include "Functionals/Muller.hpp"
-#include "Functionals/BBC1.hpp"
 #include "Functionals/BBC2.hpp"
 #include "Functionals/PNOF7.hpp"
 
 //Dictionary of functionals 
-map<string, Functional> Funcs = {{"HF",HF_func},{"Muller",Muller_func},{"BBC1",BBC1_func},{"BBC2",BBC2_func},{"PNOF7",PNOF7_func}};
+map<string, Functional> Funcs = {{"HF",HF_func},{"Muller",Muller_func},{"BBC2",BBC2_func},{"PNOF7",PNOF7_func}};
 
 // Wrapper to python code
 #include <pybind11/pybind11.h>
@@ -71,23 +70,19 @@ void test(VectorXd occ, MatrixXd orbital_mat, int ne, double Enuc,
     //code to test 
     
         cout<<"E_HF="<<HF_func.E(&gamma)<<endl;
-        //cout<<"    dE_HF="<<HF_func.grad_E(&gamma,false,false).transpose()<<endl;
-        //cout<<"num dE_HF="<<grad_func(&HF_func,&gamma,true,true).transpose()<<endl;
+        cout<<"    dE_HF="<<HF_func.grad_E(&gamma,false,false).transpose()<<endl;
+        cout<<"num dE_HF="<<grad_func(&HF_func,&gamma,true,true).transpose()<<endl;
         cout<<"E_Muller="<<Muller_func.E(&gamma)<<endl;   
-        //cout<<"    dE_M="<<Muller_func.grad_E(&gamma,true,false).transpose()<<endl;
-        //cout<<"num dE_M="<<grad_func(&Muller_func,&gamma,true,false).transpose()<<endl;
-        cout<<"E_BBC1="<<BBC1_func.E(&gamma)<<endl;
-        //cout<<"    dE_BBC1="<<BBC1_func.grad_E(&gamma,false,false).transpose()<<endl;
-        //cout<<"num dE_BBC1="<<grad_func(&BBC1_func,&gamma,true,true).transpose()<<endl;
+        cout<<"    dE_M="<<Muller_func.grad_E(&gamma,true,false).transpose()<<endl;
+        cout<<"num dE_M="<<grad_func(&Muller_func,&gamma,true,false).transpose()<<endl;
         cout<<"E_BBC2="<<BBC2_func.E(&gamma)<<endl;   
-        //cout<<"    dE_BBC2="<<BBC2_func.grad_E(&gamma,true,false).transpose()<<endl;
-        //cout<<"num dE_BBC2="<<grad_func(&BBC2_func,&gamma,true,false).transpose()<<endl;
+        cout<<"    dE_BBC2="<<BBC2_func.grad_E(&gamma,true,false).transpose()<<endl;
+        cout<<"num dE_BBC2="<<grad_func(&BBC2_func,&gamma,true,false).transpose()<<endl;
         gamma.subspace();
         gamma.solve_mu();
         cout<<"E_PNOF7="<<PNOF7_func.E(&gamma)<<endl;   
-        //cout<<"    dE_PNOF7="<<PNOF7_func.grad_E(&gamma,true,false).transpose()<<endl;
-        //cout<<"num dE_PNOF7="<<grad_func(&PNOF7_func,&gamma,true,false).transpose()<<endl;
-        
+        cout<<"    dE_PNOF7="<<PNOF7_func.grad_E(&gamma,true,false).transpose()<<endl;
+        cout<<"num dE_PNOF7="<<grad_func(&PNOF7_func,&gamma,true,false).transpose()<<endl;
     }
     auto t1 = chrono::high_resolution_clock::now();
     print_t(t1,t0,1); cout<<endl;
@@ -110,9 +105,9 @@ tuple<VectorXd, MatrixXd> Optimize_1RDM(string func, VectorXd occ, MatrixXd orbi
     Tensor<double, 4> T(l, l, l, l); T = TensorCast(elec2int, l, l, l, l);  Eigen::array<int, 4> index({ 1,3,0,2 });
     MatrixXd elec2int_x(ll, ll); elec2int_x = MatrixCast(T.shuffle(index), ll, ll);
     RDM1 gamma = RDM1(occ, orbital_mat, ne, Enuc, overlap, elec1int, elec2int, elec2int_x); double E; 
-    auto functional = Funcs.find(func); double epsi_n = sqrt(epsi); double epsi_no = 0.1;
+    auto functional = Funcs.find(func);
     if (functional == Funcs.end()) {
-        gamma.opti(&HF_func, disp, epsi, epsi_n, epsi_no, Maxiter);
+        gamma.opti(&HF_func, disp, epsi, Maxiter);
         E = HF_func.E(&gamma);  
     }
     else{
@@ -120,7 +115,7 @@ tuple<VectorXd, MatrixXd> Optimize_1RDM(string func, VectorXd occ, MatrixXd orbi
             gamma.subspace();
             gamma.solve_mu();
         }
-        gamma.opti(&functional->second, disp, epsi, epsi_n, epsi_no, Maxiter);
+        gamma.opti(&functional->second, disp, epsi, Maxiter);
         E = functional->second.E(&gamma);  
     }
     cout<<"E="<<E<<endl;

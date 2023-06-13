@@ -79,7 +79,7 @@ MatrixXd Wfg(RDM1* gamma, int f, int g) {
                       -nh_gocc(i)*vh_focc(i,j) - nh_focc(i)*vh_gocc(i,j) 
                       -nh_gocc(i)*vh_fvirt(i,j)- nh_focc(i)*vh_gvirt(i,j)
                       -nh_gvirt(i)*vh_focc(i,j)- nh_fvirt(i)*vh_gocc(i,j)
-                      -nh_gvirt(i)*vh_fvirt(i,j)-nh_fvirt(i)*vh_gvirt(i,j);
+                      +nh_gvirt(i)*vh_fvirt(i,j)+nh_fvirt(i)*vh_gvirt(i,j);
         }
     }
     return res; 
@@ -167,7 +167,7 @@ VectorXd dWfg(RDM1* gamma, int f, int g) {
             }
             else{
                 double dnh_fvirt = (h(p) - min(np(p)/h(p),1e3) )* gamma->dsqrt_n(p,q); 
-                res(q) += - dnh_fvirt*vh_gocc(p,p)- dnh_fvirt*vh_gvirt(p,p);
+                res(q) += - dnh_fvirt*vh_gocc(p,p)+ dnh_fvirt*vh_gvirt(p,p);
             }
             res(q) += gamma->dn(p,q)*v_g(p,p);
         }
@@ -180,7 +180,7 @@ VectorXd dWfg(RDM1* gamma, int f, int g) {
             }
             else{
                 double dnh_gvirt = (h(p) - min(np(p)/h(p),1e3) )* gamma->dsqrt_n(p,q); 
-                res(q) += - dnh_gvirt*vh_focc(p,p)- dnh_gvirt*vh_fvirt(p,p);
+                res(q) += - dnh_gvirt*vh_focc(p,p)+ dnh_gvirt*vh_fvirt(p,p);
             }
             res(q) += gamma->dn(p,q)*v_f(p,p);
         }

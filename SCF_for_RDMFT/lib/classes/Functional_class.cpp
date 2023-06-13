@@ -237,7 +237,7 @@ MatrixXd outer(VectorXd v1, VectorXd v2){
 VectorXd pow(const VectorXd* v, double p){
     int l = v->size(); VectorXd res (l);
     for (int i=0; i<l;i++){
-        res(i) = pow(v->coeff(i),p);
+        res(i) = pow(v->coeff(i),2);
     }
     return res;
 }
