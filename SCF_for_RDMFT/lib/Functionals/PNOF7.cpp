@@ -29,7 +29,6 @@ MatrixXd Wg(RDM1* gamma, vector<int> omega) {
         
         VectorXd n_i = VectorXd::Zero(l); if(n(i)>0){n_i(i) = 1.;}
         VectorXd n_i_virt = VectorXd::Zero(l); if(n_virt(i)>0){n_i_virt(i) = gamma->n(i);}
-        VectorXd n_i_occ  = VectorXd::Zero(l); if(n_occ (i)>0){n_i_occ (i) = gamma->n(i);}
         for (int j=0;j<l;j++) {
             res(i,j) += - n_virt(i)*v_occ(i,j) - n_occ(i)*v_virt(i,j) + n_virt(i)*v_virt(i,j);
 
