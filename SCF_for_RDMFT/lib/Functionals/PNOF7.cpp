@@ -11,11 +11,19 @@ using namespace std;
 #include "../classes/Functional_class.hpp"
 #include "PNOF7.hpp"
 
+int max_index(RDM1* gamma, vector<int> omega){
+    int index =0;
+    for (int i: omega){
+        if( gamma->n(i)>gamma->n(index)){index =i;}
+    }
+    return index;
+}
+
 MatrixXd Wg(RDM1* gamma, vector<int> omega) {
     int l = gamma->n.size();
     MatrixXd res = MatrixXd::Zero(l,l); VectorXd n_occ = VectorXd::Zero(l); VectorXd n_virt = VectorXd::Zero(l); 
     for (int p: omega) {
-        if (p==omega[0]){
+        if (p==max_index(gamma, omega)){
             n_occ(p) = gamma->n(p);
         }
         else{
@@ -46,7 +54,7 @@ MatrixXd Wfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
     VectorXd n_focc = VectorXd::Zero(l);  VectorXd n_gocc = VectorXd::Zero(l);  VectorXd nh_focc = VectorXd::Zero(l);  VectorXd nh_gocc = VectorXd::Zero(l);
     VectorXd n_fvirt = VectorXd::Zero(l); VectorXd n_gvirt = VectorXd::Zero(l); VectorXd nh_fvirt = VectorXd::Zero(l); VectorXd nh_gvirt = VectorXd::Zero(l);
     for (int p: omega_f) {
-        if(p==omega_f[0]){
+        if(p==max_index(gamma, omega_f)){
             n_focc(p) = gamma->n(p); nh_focc(p) = gamma->n(p)* sqrt(abs(2.-pow(gamma->n(p),2))); //abs to avoid numerical issues 
         }
         else{
@@ -54,7 +62,7 @@ MatrixXd Wfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
         }  
     }
     for (int q: omega_g) {
-        if(q==omega_g[0]){
+        if(q==max_index(gamma, omega_g)){
             n_gocc(q) = gamma->n(q); nh_gocc(q) = gamma->n(q)* sqrt(abs(2.-pow(gamma->n(q),2)));
         }
         else{
@@ -105,7 +113,7 @@ VectorXd dWg(RDM1* gamma, vector<int> omega) {
     VectorXd res = VectorXd::Zero(l); VectorXd n_occ = VectorXd::Zero(l); VectorXd n_virt = VectorXd::Zero(l); 
     VectorXd dn_occ = VectorXd::Zero(l); VectorXd dn_virt = VectorXd::Zero(l);
     for (int p: omega) {
-        if (p==omega[0]){
+        if (p==max_index(gamma, omega)){
             n_occ(p) = gamma->n(p); dn_occ(p) = 1.;
         }
         else{
@@ -138,7 +146,7 @@ VectorXd dWfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
     VectorXd dnh_focc = VectorXd::Zero(l);  VectorXd dnh_gocc = VectorXd::Zero(l); VectorXd dnh_fvirt = VectorXd::Zero(l); VectorXd dnh_gvirt = VectorXd::Zero(l);
     VectorXd h = (VectorXd::Constant(l,2.)-pow(&gamma->n,2) ).cwiseAbs().cwiseSqrt();
     for (int p: omega_f) {
-        if(p==omega_f[0]){
+        if(p==max_index(gamma, omega_f)){
             n_focc(p) = gamma->n(p); nh_focc(p) = gamma->n(p)* h(p);
             dnh_focc(p) = h(p) - pow(gamma->n(p),2)/max(h(p), 1e-5); 
         }
@@ -148,7 +156,7 @@ VectorXd dWfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
         }  
     }
     for (int q: omega_g) {
-        if(q==omega_g[0]){
+        if(q==max_index(gamma, omega_g)){
             n_gocc(q) = gamma->n(q); nh_gocc(q) = gamma->n(q)* h(q);
             dnh_gocc(q) = h(q) - pow(gamma->n(q),2)/max(h(q), 1e-5); 
         }
