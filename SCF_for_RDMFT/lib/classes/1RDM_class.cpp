@@ -105,12 +105,10 @@ MatrixXd RDM1::mat() const {
 Works such that a subspace is composed of 1 occupied and any number of unoccupied natural orbitals of 
 expoentioanlly decreasing occupation.*/
 void RDM1::subspace() {
-    // Requires 2*Nocc = N_elec (usually the cas but not for [0.66, 0.66, 0.66] for ex.)
-    omega.clear();
-    int l = n.size(); int Nocc = 0;
-    for (int i = 0; i < l; i++) {
-        if (n(i) > 1.) { Nocc++; }
-    }
+    int l = n.size(); int Nocc = n_elec/2;
+    if(Nocc<2){ return;}
+    else{omega.clear();}
+            
     int N_omega = l/Nocc; int N_res = l%Nocc;
     
     if(l >= n_elec){
