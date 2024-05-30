@@ -12,7 +12,7 @@ using namespace std;
 #include "PNOF7.hpp"
 
 int max_index(RDM1* gamma, vector<int> omega){
-    int index =0;
+    int index =omega[0];
     for (int i: omega){
         if( gamma->n(i)>gamma->n(index)){index =i;}
     }
