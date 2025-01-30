@@ -98,13 +98,7 @@ def rdm_guess (mol,  beta=1.6):
     
     for i in range (mol.nao):
         n[i] = FD_occ(E,i, mu)
-    else :
-        id_min = 0 ; id_max = mol.nao-1
-        for i in range (mol.nao):
-            
-            n[i] = FD_occ(E, id_min, mu)
-            id_min += 1
-            
+        
     l = len(n)
     return (np.sqrt(n), No,
             mol.nelectron, mol.energy_nuc(), mol.intor('int1e_ovlp'), 
