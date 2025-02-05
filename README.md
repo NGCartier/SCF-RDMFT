@@ -1,4 +1,4 @@
 # SCF-RDMFT
 Computation of the ground state energy using an SCF procedure in RDMFT. 
 Contains a C++ library for Python (lib)
-         a file to use it with Python (Interface.py)
+         and file to use it with Python (Interface.py)
