@@ -361,7 +361,7 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
         opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
         vector<double> min_n (l,-eta); vector<double> max_n(l, sqrt(2)+eta);
         opti.set_lower_bounds(min_n) ; opti.set_upper_bounds(max_n);
-        opti.add_equality_constraint(ne_const, &Ne);
+        opti.add_equality_constraint(ne_const, &Ne, eta);
         nlopt::result res = opti.optimize(x, fx);
         if (disp){
             cout<<opti.get_algorithm_name()<<endl;
@@ -386,7 +386,7 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
                 opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
                 vector<double> min_n(l, -eta); vector<double> max_n(l, sqrt(2) + eta);
                 opti.set_lower_bounds(min_n); opti.set_upper_bounds(max_n);
-                opti.add_equality_constraint(ne_const, &Ne);
+                opti.add_equality_constraint(ne_const, &Ne, eta);
                 nlopt::result res = opti.optimize(x, fx);
                 optmum = make_tuple(opti.last_optimum_value(), opti.get_numevals());  
             }
