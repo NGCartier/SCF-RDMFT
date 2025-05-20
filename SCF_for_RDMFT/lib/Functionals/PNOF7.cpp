@@ -74,8 +74,8 @@ MatrixXd Wfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
     }
     VectorXd n_f = n_focc+n_fvirt; VectorXd n_g = n_gocc+n_gvirt;
     n_f = pow(&n_f,2); n_g = pow(&n_g,2);
-    MatrixXd v_f = v_J(gamma,&n_f) -1./2.*v_K(gamma,&n_f); MatrixXd v_g = v_J(gamma,&n_g) -1./2.*v_K(gamma,&n_g); 
-    MatrixXd vh_focc = v_K(gamma, &nh_focc); MatrixXd vh_gocc = v_K(gamma, &nh_gocc); MatrixXd vh_fvirt = v_K(gamma,&nh_fvirt); MatrixXd vh_gvirt = v_K(gamma,&nh_gvirt);
+    MatrixXd v_f = v_J(gamma,&n_f) -0.5*v_K(gamma,&n_f); MatrixXd v_g = v_J(gamma,&n_g) -0.5*v_K(gamma,&n_g); 
+    MatrixXd vh_focc = 0.25*v_K(gamma, &nh_focc); MatrixXd vh_gocc = 0.25*v_K(gamma, &nh_gocc); MatrixXd vh_fvirt = 0.25*v_K(gamma,&nh_fvirt); MatrixXd vh_gvirt = 0.25*v_K(gamma,&nh_gvirt);
     for (int i:omega_fg) {
         for (int j = 0; j < l; j++) {
             res(i,j) = n_g(i)*v_f(i,j) + n_f(i)*v_g(i,j)
@@ -174,8 +174,8 @@ VectorXd dWfg(RDM1* gamma, vector<int> omega_f, vector<int> omega_g, bool old) {
     VectorXd n_f_0 = n_focc+n_fvirt; VectorXd n_g_0 = n_gocc+n_gvirt;
     VectorXd n_f = pow(&n_f_0,2); VectorXd n_g = pow(&n_g_0,2);
     VectorXd dn_f = 2.*(n_f_0); VectorXd dn_g = 2.*(n_g_0);
-    MatrixXd v_f = v_J(gamma,&n_f) -1./2.*v_K(gamma,&n_f); MatrixXd v_g = v_J(gamma,&n_g) -1./2.*v_K(gamma,&n_g); 
-    MatrixXd vh_focc = v_K(gamma,&nh_focc); MatrixXd vh_gocc = v_K(gamma,&nh_gocc); MatrixXd vh_fvirt = v_K(gamma,&nh_fvirt); MatrixXd vh_gvirt = v_K(gamma,&nh_gvirt);
+    MatrixXd v_f = v_J(gamma,&n_f) -0.5*v_K(gamma,&n_f); MatrixXd v_g = v_J(gamma,&n_g) -0.5*v_K(gamma,&n_g); 
+    MatrixXd vh_focc = 0.25*v_K(gamma,&nh_focc); MatrixXd vh_gocc = 0.25*v_K(gamma,&nh_gocc); MatrixXd vh_fvirt = 0.25*v_K(gamma,&nh_fvirt); MatrixXd vh_gvirt = 0.25*v_K(gamma,&nh_gvirt);
     for (int i = 0; i < l; i++) {
         res(i) = dn_g(i)*v_f(i,i) + dn_f(i)*v_g(i,i)
                 -dnh_gocc(i)*vh_focc(i,i) - dnh_focc(i)*vh_gocc(i,i) 
