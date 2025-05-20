@@ -105,10 +105,13 @@ MatrixXd RDM1::mat() const {
 Works such that a subspace is composed of 1 occupied and any number of unoccupied natural orbitals of 
 expoentioanlly decreasing occupation.*/
 void RDM1::subspace() {
+    
     int l = n.size(); int Nocc = n_elec/2;
     if(Nocc<2){ return;}
     else{omega.clear();}
-            
+    
+    sort(n.begin(),n.end());//sort the occupations in ascending order in case they were not already
+
     int N_omega = l/Nocc; int N_res = l%Nocc;
     
     if(l >= n_elec){
@@ -220,29 +223,22 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
     if (disp>2){detailed_disp = true;}
     else {detailed_disp = false;}
 
-    while( ( (E-E_bis)/E>epsi  || !NO_precise ) && k<maxiter){//weak termination criterium
-
+    while( ( abs((E-E_bis)/E)>epsi  || !NO_precise ) && k<maxiter){//weak termination criterium
+    
         k++; E_bis = E; 
         auto t0 = chrono::high_resolution_clock::now();
         tuple<double,int> res;
-        try{
-            res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
-            nit_no = get<1>(res); E = get<0>(res);
-            if(E>E_bis){cout<<"Diverged"<<endl; break;}
-        }
-        catch(...){
-            cout<<"/!\\ NO iteration interrupted due to Nlopt failure."<<endl;   
-        }
-
+        
+        res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
+        nit_no = get<1>(res); E = get<0>(res);
+        if(E>E_bis+epsi){cout<<"Diverged"<<endl; break;}
+    
         auto t1 = chrono::high_resolution_clock::now();
-        try{
-            res = opti_n(this, func, epsi_n, min(1e-9, epsi_n*1e-2), detailed_disp, maxiter);
-            nit_n = get<1>(res); E = get<0>(res);            
-            if(E>E_bis){cout<<"Diverged"<<endl; break;}
-        }
-        catch(...){
-            cout<<"/!\\ Occ iteration interrupted due to Nlopt failure."<<endl;   
-        }
+       
+        res = opti_n(this, func, epsi_n, min(1e-10, epsi_n*1e-2), detailed_disp, maxiter);
+        nit_n = get<1>(res); E = get<0>(res);
+        if(E>E_bis+epsi){cout<<"Diverged"<<endl; break;}
+        
         auto t2 = chrono::high_resolution_clock::now();
         nit += nit_n + nit_no; grad = (func->grad_E(this,false,false)).norm();
         if (disp>1){
@@ -251,7 +247,7 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
             cout<<"Occ opti time: "; print_t(t2,t1); cout<<" and # of iter "<< nit_n<<endl;
         }
         if(epsi_no==epsi_n){NO_precise =true;}
-        if (nit_n <=15 && !NO_precise){epsi_no = max(epsi_no/6.9,epsi_n); }
+        if (!NO_precise){epsi_no = max(epsi_no/6.9,epsi_n); }
         
     }
     if (k==maxiter){
@@ -343,13 +339,13 @@ the occupations are optimised in-place
 \param results  corresponding energy, number of iterations
 */
 tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double eta, bool disp, int maxiter){
-    tuple<double, int> optmum; int nit =0;
+    tuple<double, int> optmum; int nit = 0;
 
 
     if (gamma->omega.size() == 1) {
         int l = gamma->n.size();
         double Ne = static_cast<double>(gamma->n_elec); 
-        vector<double> x(l); Map<VectorXd>(x.data(),x.size()) = gamma->n; double fx; 
+        vector<double> x(l); Map<VectorXd>(x.data(),x.size()) = gamma->n; double fx =0; 
         nlopt::opt opti = nlopt::opt(nlopt::LD_SLSQP, l);
         epsilon = epsilon/10.0; // sum_i n-i = ne constrained by NLopt method up to epsilon**2 -> can impact the
                                // energy if one does not reduces epsilon.
@@ -360,14 +356,18 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
         opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
         vector<double> min_n (l,-eta); vector<double> max_n(l, sqrt(2)+eta);
         opti.set_lower_bounds(min_n) ; opti.set_upper_bounds(max_n);
-        opti.add_equality_constraint(ne_const, &Ne);
-        nlopt::result res = opti.optimize(x, fx);
-        if (disp){
-            cout<<opti.get_algorithm_name()<<endl;
+        opti.add_equality_constraint(ne_const, &Ne, eta);
+        try{
+            nlopt::result res = opti.optimize(x, fx);
         }
+        catch(...){
+            cout<<" /!\\ Occ iteration interrupted due to Nlopt failure. "<<endl;
+        }
+       
         optmum = make_tuple(opti.last_optimum_value(), opti.get_numevals());
     }
     else { //called if func need subspaces (i.e. PNOF7)
+        bool flag = false;
         for (int g = 0; g < gamma->omega.size(); g++) {
             int l = gamma->omega[g].size();
             if(l>1){
@@ -385,10 +385,21 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
                 opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
                 vector<double> min_n(l, -eta); vector<double> max_n(l, sqrt(2) + eta);
                 opti.set_lower_bounds(min_n); opti.set_upper_bounds(max_n);
-                opti.add_equality_constraint(ne_const, &Ne);
-                nlopt::result res = opti.optimize(x, fx);
-                nit += opti.get_numevals()
-                optmum = make_tuple(opti.last_optimum_value(), nit);  
+                opti.add_equality_constraint(ne_const, &Ne, eta);
+
+                try{
+                    opti.optimize(x, fx);
+                    //Ideally we would want optmum update outside the 'try' but gives badalloc 
+                    nit += opti.get_numevals();
+                    optmum = make_tuple(opti.last_optimum_value(), nit);  
+                }
+                catch(...){
+                    if (!flag){
+                        cout<<" /!\\ Occ iteration interrupted due to Nlopt failure. \n"<<endl;
+                    }
+                    flag = true;
+                }
+                
             }
                                 
         }
@@ -446,7 +457,13 @@ tuple<double,int> opti_no(RDM1* gamma, Functional* func, double epsilon, bool di
     
     opti.set_min_objective(f_no, &f_data);
     opti.set_xtol_rel(epsilon); opti.set_maxeval(maxiter);
-    nlopt::result res = opti.optimize(x, fx);
+    try {
+        nlopt::result res = opti.optimize(x, fx);
+    }
+    catch(...){
+        cout<<" /!\\ NO iteration interrupted due to Nlopt failure.";
+    }
+    
     
     VectorXd l_theta = VectorXd::Map (x.data(), ll);
     return make_tuple(opti.last_optimum_value(),opti.get_numevals());
