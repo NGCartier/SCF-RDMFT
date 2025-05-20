@@ -214,7 +214,7 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
     cout<<setprecision(-log10(epsi)+1);
     auto t_init = chrono::high_resolution_clock::now();
     int k = 0; int l = n.size(); int nit= 0; int ll = l*(l-1)/2; bool NO_precise = false;
-    double E = func->E(this); double E_bis = DBL_MAX; double grad = DBL_MAX;
+    double E = func->E(this); double E_bis = DBL_MAX; double grad = DBL_MAX; int nit_no =0; int nit_n =0;
     
     bool detailed_disp;
     if (disp>2){detailed_disp = true;}
@@ -227,23 +227,22 @@ void RDM1::opti(Functional* func, int disp, double epsi, double epsi_n, double e
         tuple<double,int> res;
         try{
             res  = opti_no(this, func, epsi_no, detailed_disp, maxiter);
+            nit_no = get<1>(res); E = get<0>(res);
             if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ NO iteration interrupted due to Nlopt failure."<<endl;   
         }
-        int nit_no = get<1>(res); E = get<0>(res);
-        
 
         auto t1 = chrono::high_resolution_clock::now();
         try{
             res = opti_n(this, func, epsi_n, min(1e-9, epsi_n*1e-2), detailed_disp, maxiter);
+            nit_n = get<1>(res); E = get<0>(res);            
             if(E>E_bis){cout<<"Diverged"<<endl; break;}
         }
         catch(...){
             cout<<"/!\\ Occ iteration interrupted due to Nlopt failure."<<endl;   
         }
-        int nit_n = get<1>(res); E = get<0>(res);
         auto t2 = chrono::high_resolution_clock::now();
         nit += nit_n + nit_no; grad = (func->grad_E(this,false,false)).norm();
         if (disp>1){
@@ -344,7 +343,7 @@ the occupations are optimised in-place
 \param results  corresponding energy, number of iterations
 */
 tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double eta, bool disp, int maxiter){
-    tuple<double, int> optmum;
+    tuple<double, int> optmum; int nit =0;
 
 
     if (gamma->omega.size() == 1) {
@@ -388,7 +387,8 @@ tuple<double,int> opti_n(RDM1* gamma, Functional* func, double epsilon, double e
                 opti.set_lower_bounds(min_n); opti.set_upper_bounds(max_n);
                 opti.add_equality_constraint(ne_const, &Ne);
                 nlopt::result res = opti.optimize(x, fx);
-                optmum = make_tuple(opti.last_optimum_value(), opti.get_numevals());  
+                nit += opti.get_numevals()
+                optmum = make_tuple(opti.last_optimum_value(), nit);  
             }
                                 
         }
